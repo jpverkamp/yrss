@@ -1,5 +1,7 @@
-import dateutil.parser # python-dateutil
-import feedformatter # feedformatter
+#!/usr/bin/env python
+
+import dateutil.parser
+import feedformatter
 import flask 
 import os
 import pprint
@@ -7,8 +9,12 @@ import requests
 import sys
 import time
 
-API_KEY = 'AIzaSyAa6hkKfQR9BY8JtFoDT9OEojMrZyWZRqs'
+API_KEY = os.getenv('API_KEY', None)
 CACHE_TIME = os.getenv('CACHE_TIME', 60 * 60) # default = 1 hour
+
+if not API_KEY:
+    print('Must specify API_KEY')
+    sys.exit(-1)
 
 app = flask.Flask(__name__)
 

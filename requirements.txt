@@ -1,3 +1,4 @@
 feedformatter
 flask
 python-dateutil
+requests

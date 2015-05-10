@@ -59,23 +59,30 @@ def generatefeed(user):
 
     # Generate a list of results that can be used as feed items
     feed = feedformatter.Feed()
-    feed.feed['title'] = 'YRSS Feed for ' + user
+    feed.feed['title'] = user + ' (YRSS)'
     feed.feed['author'] = user + ' (YRSS)'
-
+    
     for item in response.json()['items']:
         title = item['snippet']['title']
         description = item['snippet']['description']
         video_id = item['snippet']['resourceId']['videoId']
         published = item['snippet']['publishedAt']
         thumbnail = item['snippet']['thumbnails']['high']['url']
+	video_url = 'https://www.youtube.com/watch?v=' + video_id
 
         feed.items.append({
             'title': title,
-            'link': 'https://www.youtube.com/watch?v=' + video_id,
-            'description': description,
+            'link': video_url,
             'pubDate': dateutil.parser.parse(published).timetuple(),
             'guid': video_id,
-        })
+	    'description': '''
+<a href="{url}"><img src="{img}" /></a>
+<a href="{url}">{title}</a>
+'''.format(
+    url = video_url,
+    img = thumbnail,
+    title = title,
+        )})
 
     # Cache to disk
     feed_txt = feed.format_atom_string()

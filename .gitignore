@@ -1,0 +1,13 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# YRSS cache and configuration files
+.cache/
+env.conf
+
+# Backup files
+*~
+*.bak
+*.swp

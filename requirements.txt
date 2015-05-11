@@ -1,4 +1,4 @@
-feedformatter
+feedgen
 flask
 python-dateutil
 requests

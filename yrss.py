@@ -1,16 +1,21 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
+if sys.version_info[0] != 3:
+    print("This script requires Python 3")
+    exit()
 
 import dateutil.parser
-import feedformatter
-import flask 
+import feedgen.feed
+import flask
 import os
 import pprint
 import requests
-import sys
 import time
 
 API_KEY = os.getenv('API_KEY', None)
-CACHE_TIME = os.getenv('CACHE_TIME', 60 * 60) # default = 1 hour
+CACHE_TIME = int(os.getenv('CACHE_TIME', 60 * 60)) # default = 1 hour
 
 if not API_KEY:
     print('Must specify API_KEY')
@@ -30,13 +35,9 @@ def generatefeed(user):
     cache_file = os.path.join('.cache', user)
     if os.path.exists(cache_file):
         creation_time = os.path.getmtime(cache_file)
-	if time.time() - creation_time < CACHE_TIME:
-	    print 'Loading {user} from cache ({age} seconds old)'.format(
-		user = user,
-		age = time.time() - creation_time
-	    )
-	    with open(cache_file) as fin:
-		return fin.read()
+        if time.time() - creation_time < CACHE_TIME:
+            with open(cache_file) as fin:
+                return fin.read()
 
     # Use the channel to get the 'uploads' playlist id
     response = requests.get(
@@ -61,34 +62,35 @@ def generatefeed(user):
     )
 
     # Generate a list of results that can be used as feed items
-    feed = feedformatter.Feed()
-    feed.feed['title'] = user + ' (YRSS)'
-    feed.feed['author'] = user + ' (YRSS)'
-    
+    feed = feedgen.feed.FeedGenerator()
+    feed.title(user + ' (YRSS)')
+    feed.author({'name': user + ' (YRSS)'})
+    feed.id('YRSS:' + user)
+
     for item in response.json()['items']:
         title = item['snippet']['title']
-        description = item['snippet']['description']
         video_id = item['snippet']['resourceId']['videoId']
         published = item['snippet']['publishedAt']
         thumbnail = item['snippet']['thumbnails']['high']['url']
-	video_url = 'https://www.youtube.com/watch?v=' + video_id
+        video_url = 'https://www.youtube.com/watch?v=' + video_id
 
-        feed.items.append({
-            'title': title,
-            'link': video_url,
-            'pubDate': dateutil.parser.parse(published).timetuple(),
-            'guid': video_id,
-	    'description': '''
+        item = feed.add_entry()
+        item.title(title)
+        item.link(href = video_url)
+        item.published(dateutil.parser.parse(published))
+        item.updated(dateutil.parser.parse(published))
+        item.id(video_id)
+        item.content('''
 <a href="{url}"><img src="{img}" /></a>
 <a href="{url}">{title}</a>
 '''.format(
-    url = video_url,
-    img = thumbnail,
-    title = title,
-        )})
+            url = video_url,
+            img = thumbnail,
+            title = title,
+        ))
 
     # Cache to disk
-    feed_txt = feed.format_atom_string()
+    feed_txt = feed.atom_str()
     with open(cache_file, 'w') as fout:
         fout.write(feed_txt)
 

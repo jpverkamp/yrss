@@ -47,10 +47,7 @@ def generatefeed(user):
             'key': API_KEY,
         }
     )
-    try:
-        playlistId = response.json()['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-    except:
-        return 'unknown user id: {user}'.format(user = user)
+    playlistId = response.json()['items'][0]['contentDetails']['relatedPlaylists']['uploads']
 
     # Get the most recent 20 videos on the 'uploads' playlist
     response = requests.get(

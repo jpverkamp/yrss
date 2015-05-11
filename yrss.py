@@ -11,6 +11,7 @@ import feedgen.feed
 import flask
 import os
 import pprint
+import re
 import requests
 import time
 
@@ -31,6 +32,11 @@ except:
 @app.route('/<user>.xml')
 @app.route('/<user>/atom.xml')
 def generatefeed(user):
+    # Validate that it's a valid user id
+    # https://support.google.com/a/answer/33386?hl=en
+    if not re.match('^[a-z0-9_\'.-]{6,20}$', user):
+        flask.abort(400, 'Invalid username format')
+
     # Try the cache first, unless it's old
     cache_file = os.path.join('.cache', user)
     if os.path.exists(cache_file):
@@ -48,6 +54,11 @@ def generatefeed(user):
             'key': API_KEY,
         }
     )
+    if response.status_code != 200:
+        flask.abort(400, 'YouTube API error')
+    if not response.json()['items']:
+        flask.abort(400, 'User not found')
+
     playlistId = response.json()['items'][0]['contentDetails']['relatedPlaylists']['uploads']
 
     # Get the most recent 20 videos on the 'uploads' playlist

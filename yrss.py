@@ -32,9 +32,10 @@ except:
 @app.route('/<user>.xml')
 @app.route('/<user>/atom.xml')
 def generatefeed(user):
+    user = user.lower()
     # Validate that it's a valid user id
     # https://support.google.com/a/answer/33386?hl=en
-    if not re.match('^[a-z0-9_\'.-]{6,20}$', user):
+    if not re.match('^[a-z0-9_\'.-]{5,20}$', user):
         flask.abort(400, 'Invalid username format')
 
     # Try the cache first, unless it's old

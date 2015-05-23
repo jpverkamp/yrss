@@ -92,13 +92,13 @@ def generatefeed(user):
         item.updated(dateutil.parser.parse(published))
         item.id(video_id)
         item.content('''
-<a href="{url}"><img src="{img}" /></a>
+<a href="{url}"><img src="{img}" /></a><br />
 <a href="{url}">{title}</a>
 '''.format(
             url = video_url,
             img = thumbnail,
             title = title,
-        ))
+        ), None, 'html')
 
     # Cache to disk
     feed_txt = feed.atom_str()

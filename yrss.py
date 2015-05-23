@@ -49,7 +49,7 @@ def generatefeed(user):
     response = requests.get(
         'https://www.googleapis.com/youtube/v3/channels',
         params = {
-            'part': 'contentDetails',
+            'part': 'contentDetails,snippet',
             'forUsername': user,
             'key': API_KEY,
         }
@@ -59,7 +59,13 @@ def generatefeed(user):
     if not response.json()['items']:
         flask.abort(400, 'User not found')
 
-    playlistId = response.json()['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+    channel = response.json()['items'][0]
+    channel_url = 'https://www.youtube.com/channel/' + channel['id']
+    channel_snippet = channel['snippet']
+    channel_title = channel_snippet['title']
+    channel_description = channel_snippet['description']
+    channel_logo = channel_snippet['thumbnails']['default']['url']
+    playlistId = channel['contentDetails']['relatedPlaylists']['uploads']
 
     # Get the most recent 20 videos on the 'uploads' playlist
     response = requests.get(
@@ -74,10 +80,13 @@ def generatefeed(user):
 
     # Generate a list of results that can be used as feed items
     feed = feedgen.feed.FeedGenerator()
-    feed.title(user + ' (YRSS)')
-    feed.author({'name': user + ' (YRSS)'})
-    feed.link(href = 'https://www.youtube.com/user/' + user)
-    feed.id('https://www.youtube.com/user/' + user)
+    feed.title(channel_title)
+    feed.author({'name': channel_title})
+    feed.link(href=channel_url)
+    feed.description(channel_description)
+    feed.icon("https://www.youtube.com/favicon.ico")
+    feed.logo(channel_logo)
+    feed.id(channel_url)
 
     for item in response.json()['items']:
         title = item['snippet']['title']

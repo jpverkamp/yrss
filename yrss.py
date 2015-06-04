@@ -76,6 +76,7 @@ def generatefeed(user):
     feed = feedgen.feed.FeedGenerator()
     feed.title(user + ' (YRSS)')
     feed.author({'name': user + ' (YRSS)'})
+    feed.link(href = 'https://www.youtube.com/user/' + user)
     feed.id('https://www.youtube.com/user/' + user)
 
     for item in response.json()['items']:

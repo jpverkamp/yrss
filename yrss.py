@@ -76,7 +76,7 @@ def generatefeed(user):
     feed = feedgen.feed.FeedGenerator()
     feed.title(user + ' (YRSS)')
     feed.author({'name': user + ' (YRSS)'})
-    feed.id('YRSS:' + user)
+    feed.id('https://www.youtube.com/user/' + user)
 
     for item in response.json()['items']:
         title = item['snippet']['title']
@@ -90,7 +90,8 @@ def generatefeed(user):
         item.link(href = video_url)
         item.published(dateutil.parser.parse(published))
         item.updated(dateutil.parser.parse(published))
-        item.id(video_id)
+        item.id(video_url)
+
         item.content('''
 <a href="{url}"><img src="{img}" /></a><br />
 <a href="{url}">{title}</a>

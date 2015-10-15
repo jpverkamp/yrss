@@ -3,7 +3,7 @@
 
 import sys
 if sys.version_info[0] != 3:
-    print("This script requires Python 3")
+    print('This script requires Python 3')
     exit()
 
 import dateutil.parser
@@ -24,7 +24,7 @@ if not API_KEY:
     print('Must specify API_KEY')
     sys.exit(-1)
 
-logging.basicConfig(format='%(levelname)s: \t%(message)s', level=logging.INFO)
+logging.basicConfig(format='[%(levelname)s] %(funcName)s: %(message)s', level = logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -35,22 +35,26 @@ try:
 except:
     pass
 
-class InputType(Enum):
+class input_type(Enum):
+    '''Currently supported channel types'''
+
     user = 1
     channel = 2
 
+def generate_feed(channel):
+    '''
+    Turn a channel into an rss feed.
 
-def generatefeed(channel):
-    """
-    channel :   channels resource
-                see https://developers.google.com/youtube/v3/docs/channels#resource
-    """
+    @param channel The channel resource (see https://developers.google.com/youtube/v3/docs/channels#resource)
+    @return string An atom feed for that channel
+    '''
+
     channel_url = 'https://www.youtube.com/channel/' + channel['id']
     channel_snippet = channel['snippet']
     channel_title = channel_snippet['title']
     channel_description = channel_snippet['description']
     channel_logo = channel_snippet['thumbnails']['default']['url']
-    playlistId = channel['contentDetails']['relatedPlaylists']['uploads']
+    playlist_id = channel['contentDetails']['relatedPlaylists']['uploads']
 
     # Get the most recent 20 videos on the 'uploads' playlist
     response = requests.get(
@@ -58,7 +62,7 @@ def generatefeed(channel):
         params = {
             'part': 'snippet',
             'maxResults': 20,
-            'playlistId': playlistId,
+            'playlistId': playlist_id,
             'key': API_KEY
         }
     )
@@ -69,7 +73,7 @@ def generatefeed(channel):
     feed.author({'name': channel_title})
     feed.link(href=channel_url)
     feed.description(channel_description)
-    feed.icon("https://www.youtube.com/favicon.ico")
+    feed.icon('https://www.youtube.com/favicon.ico')
     feed.logo(channel_logo)
     feed.id(channel_url)
 
@@ -88,8 +92,8 @@ def generatefeed(channel):
         item.id(video_url)
 
         item.content('''
-<a href="{url}"><img src="{img}" /></a><br />
-<a href="{url}">{title}</a>
+<a href='{url}'><img src='{img}' /></a><br />
+<a href='{url}'>{title}</a>
 '''.format(
             url = video_url,
             img = thumbnail,
@@ -98,109 +102,129 @@ def generatefeed(channel):
 
     return feed.atom_str()
 
+def get_channel(type, name):
+    '''
+    Fetch a channel from the YouTube API.
 
-def getChannel(inputType, name):
-    """
-    inputType : InputType
-                Specifies if the name is a username or channelid
-    name :  String
-            Username or channelid
-    """
-    logger.debug("getChannel: Type: " + inputType.name + " id/user: " + name)
+    @param type The type of channel to fetch, see input_type enum
+    @param name The name of the channel to fetch (a username / channel id / etc)
+    @return json The channel items
+    '''
+
+    logger.debug('get_channel: fetching {name} ({type})'.format(type = type.name, name = name))
     parameters = {
         'part': 'contentDetails,snippet',
         'key': API_KEY,
     }
-    if inputType is InputType.user:
+
+    if type is input_type.user:
         parameters['forUsername'] = name
-    elif inputType is InputType.channel:
+    elif type is input_type.channel:
         parameters['id'] = name
     else:
-        logger.error('getChannel: argument inputType is invalid.')
+        logger.error('unknown channel type: {type}'.format(type = type.name))
         sys.exit(-1)
 
     response = requests.get('https://www.googleapis.com/youtube/v3/channels', params=parameters)
     if response.status_code != 200:
+        logger.warning('YouTube error: {error}'.format(error = response.text))
         flask.abort(400, 'YouTube API error')
-        logger.warning("YouTube API error: " + response.text)
+
     if not response.json()['items']:
-        flask.abort(400, 'User or Channel not found')
-        logger.info("User or Channel (" + name + ") not found")
+        logger.info('resource not found: {name} ({type})'.format(type = type.name, name = name))
+        flask.abort(400, 'Resource not found')
 
     return response.json()['items'][0]
 
-def getCacheFile(inputType, name):
-    """
-    inputType : InputType
-                Specifies if the name is a username or channelid
-    name :  String
-            Username or channelid
+def get_cache_filename(type, name):
+    '''
+    Determine what filename would be used to cache a specific file.
 
-    Returns the path to the cache file of the given username/channelid
-    """
-    cache_file = os.path.join('.cache', inputType.name + '_' + name + '.xml')
-    return cache_file
+    @param type The type of channel to fetch, see input_type enum
+    @param name The name of the channel to fetch (a username / channel id / etc)
+    @return string A filename on the local filesystem to cache results
+    '''
 
-def checkCache(inputType, name):
-    """
-    inputType : InputType
-                Specifies if the name is a username or channelid
-    name :  String
-            Username or channelid
+    return os.path.join('.cache', '{type}-{name}.xml'.format(type = type.name, name = name))
 
-    Returns the cached feed for the given username/channelid.
-    If there is no cache or the cache is invalid this function returns False
-    """
-    cache_file = getCacheFile(inputType, name)
-    logger.debug("checkCache: " + cache_file)
+def check_cache(type, name):
+    '''
+    Check if given file is in the cache.
+
+    @param type The type of channel to fetch, see input_type enum
+    @param name The name of the channel to fetch (a username / channel id / etc)
+    @return string The cached XML if it exists (and hasn't expired), otherwise None
+    '''
+
+    cache_file = get_cache_filename(type, name)
+    logger.debug('is {filename} cached?'.format(filename = cache_file))
+
     if os.path.exists(cache_file):
         creation_time = os.path.getmtime(cache_file)
-        if time.time() - creation_time < CACHE_TIME:
+        if time.time() - creation_time >= CACHE_TIME:
+            logger.debug('{filename} is cached, but the cache has expired'.format(filename = cache_file))
+        else:
+            logger.debug('loading {filename} from cache'.format(filename = cache_file))
             with open(cache_file) as fin:
                 return fin.read()
-    return False
 
-def cacheToDisk(inputType, name, feed_txt):
-    """
-    inputType : InputType
-                Specifies if the name is a username or channelid
-    name :  String
-            Username or channelid
-    feed_txt :  String
-                Feed to be cached
-    Saves the Feed to the username/channelids cache file
-    """
-    cache_file = getCacheFile(inputType, name)
-    logger.debug("cacheToDisk: " + cache_file)
+def cache_to_disk(type, name, data):
+    '''
+    Write a file to a cache on disk.
+
+    @param type The type of channel to fetch, see input_type enum
+    @param name The name of the channel to fetch (a username / channel id / etc)
+    @param data The data to write to disk
+    '''
+
+    cache_file = get_cache_filename(type, name)
+    logger.debug('saving {filename} to cache'.format(filename = cache_file))
+
     with open(cache_file, 'w') as fout:
-        fout.write(feed_txt)
+        fout.write(data)
 
+def generate_feed_with_cache(type, name):
+    '''
+    Either load a previously existing feed from cache or generate (and cache) a new one.
 
-# Old URLs
-@app.route('/<user>.xml')
-@app.route('/<user>/atom.xml')
-# New URLs
-@app.route('/user/<user>.xml')
-@app.route('/user/<user>/atom.xml')
-def generatefeedFromUser(user):
-    cached = checkCache(InputType.user, user)
+    @param type The type of channel to fetch, see input_type enum
+    @param name The name of the channel to fetch (a username / channel id / etc)
+    @return string The atom XML for the given resource
+    '''
+
+    # Exists in cache, return directly
+    cached = check_cache(type, name)
     if cached:
         return cached
-    channeldata = getChannel(InputType.user, user)
-    feed_txt = generatefeed(channeldata)
-    cacheToDisk(InputType.user, user, feed_txt)
-    return feed_txt
+
+    # Wasn't cached (or expired), generate a new feed, save, then return
+    channel_data = get_channel(type, name)
+    feed = generate_feed(channel_data)
+    cache_to_disk(type, name, feed)
+
+    return feed
+
+@app.route('/<user>.xml')
+@app.route('/<user>/atom.xml')
+@app.route('/user/<user>.xml')
+@app.route('/user/<user>/atom.xml')
+def generate_feed_from_user(user):
+    '''
+    Generate a user specific RSS feed.
+
+    /<user>.xml is used for backwards compatibility
+    '''
+
+    return generate_feed_with_cache(input_type.user, user)
 
 @app.route('/channel/<channel>.xml')
 @app.route('/channel/<channel>/atom.xml')
-def generatefeedFromChannel(channel):
-    cached = checkCache(InputType.channel, channel)
-    if cached:
-        return cached
-    channeldata = getChannel(InputType.channel, channel)
-    feed_txt = generatefeed(channeldata)
-    cacheToDisk(InputType.channel, channel, feed_txt)
-    return feed_txt
+def generate_feed_from_channel(channel):
+    '''
+    Generate a feed from a YouTube channel.
+    '''
+
+    return generate_feed_with_cache(input_type.channel, channel)
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 9777, debug = '--debug' in sys.argv)

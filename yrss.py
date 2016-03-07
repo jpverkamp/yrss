@@ -215,7 +215,7 @@ def generate_feed_from_user(user):
     /<user>.xml is used for backwards compatibility
     '''
 
-    return generate_feed_with_cache(input_type.user, user)
+    return flask.Response(generate_feed_with_cache(input_type.user, user), mimetype='text/xml')
 
 @app.route('/channel/<channel>.xml')
 @app.route('/channel/<channel>/atom.xml')
@@ -224,7 +224,7 @@ def generate_feed_from_channel(channel):
     Generate a feed from a YouTube channel.
     '''
 
-    return generate_feed_with_cache(input_type.channel, channel)
+    return flask.Response(generate_feed_with_cache(input_type.channel, channel), mimetype='text/xml')
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 9777, debug = '--debug' in sys.argv)

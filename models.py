@@ -145,6 +145,20 @@ class Feed(BaseModel):
 
         return updated_something
 
+    def get_videos(self, n = RSS_COUNT):
+        """Get the n most recent videos"""
+
+        videos = (
+            Video.select()
+            .join(Feed)
+            .where(Feed.id == self.id)
+            .order_by(Video.published.desc())
+            .paginate(1, RSS_COUNT)
+        )
+
+        for video in videos:
+            yield video
+
     def __str__(self):
         return f"Feed<{self.title}, {self.youtube_id}>"
 

@@ -165,7 +165,12 @@ def get_feed(uuid):
         updated = max(updated, video.updated)
 
     return flask.Response(
-        flask.render_template('feed.xml', user = user, videos = user.get_videos(), updated = updated),
+        flask.render_template('feed.xml', 
+            title = user.email,
+            path = f'/feed/{user.feed_uuid}.xml',
+            updated = updated,
+            videos = user.get_videos(),
+        ),
         mimetype='application/atom+xml'
     )
 
@@ -208,3 +213,27 @@ def register():
         flask.flash('New user created')
         flask.session['email'] = email
         return flask.redirect('/')
+
+# Legacy compatibility
+@app.route('/user/<id_or_username>.xml')
+@app.route('/user/<id_or_username>/atom.xml')
+@app.route('/channel/<id_or_username>.xml')
+@app.route('/channel/<id_or_username>/atom.xml')
+@app.route('/legacy/<id_or_username>.xml')
+def legacy(id_or_username):
+    if len(id_or_username) == 24:
+        youtube_id = id_or_username
+    else:
+        youtube_id = youtube.get_channel_id_for_username(id_or_username)
+
+    feed = Feed.get(youtube_id = youtube_id)
+
+    return flask.Response(
+        flask.render_template('feed.xml', 
+            title = feed.title,
+            path = f'/legacy/{feed.youtube_id}.xml',
+            updated = feed.updated,
+            videos = feed.get_videos(),
+        ),
+        mimetype='application/atom+xml'
+    )

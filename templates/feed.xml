@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>{{ user.feed_uuid }}</id>
-    <title>YRSS2 for {{ user.email }}</title>
+    <id>{{ path }}</id>
+    <title>YRSS2 for {{ title }}</title>
     <updated>{{ updated }}</updated>
     <author>
         <name>YRSS2</name>
     </author>
-    <link href="https://yrss.jverkamp.com/feed/{{ user.feed_uuid }}.xml" />
+    <link href="https://yrss.jverkamp.com{{ path }}" />
     {% for video in videos %}
     <entry>
         <id>https://www.youtube.com/watch?v={{ video.youtube_id }}</id>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>{{ user.feed_uuid }}</id>
+    <title>YRSS2 for {{ user.email }}</title>
+    <updated>{{ updated }}</updated>
+    <author>
+        <name>YRSS2</name>
+    </author>
+    <link href="https://yrss.jverkamp.com/feed/{{ user.feed_uuid }}.xml" />
+    {% for video in videos %}
+    <entry>
+        <id>https://www.youtube.com/watch?v={{ video.youtube_id }}</id>
+        <title>{{ video.feed.title }} | {{ video.title }}</title>
+        <updated>{{ video.updated }}</updated>
+        <content type="html">
+            <![CDATA[
+                <h1>{{ video.feed.title }}</h1>
+                <h2><a href="https://www.youtube.com/watch?v={{ video.youtube_id }}">{{ video.title }}</a></h2>
+                <a href="https://www.youtube.com/watch?v={{ video.youtube_id }}">
+                    <img src="{{ video.thumbnail }}" />
+                </a>
+            ]]>
+        </content>
+        <link href="https://www.youtube.com/watch?v={{ video.youtube_id }}" rel="alternate" />
+        <published>{{ video.published }}</published>
+    </entry>
+    {% endfor %}
+</feed>

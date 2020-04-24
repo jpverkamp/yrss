@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>YRSS 2: YouTube RSS</title>
+
+    <style>
+table, th, td {
+  border: 1px solid black;
+}
+
+td { 
+    padding: 0.1em;
+}
+    </style>
+</head>
+<body>
+    <div id="messages">
+        {% with messages = get_flashed_messages(with_categories = true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        {% if category == 'message' %}
+        <div class="alert alert-success">{{ message }}</div>
+        {% else %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endwith %}    
+    </div>
+
+    <div id="nav">
+        {% if 'email' in session %}
+        <p>Welcome {{ session['email'] }}!</p>
+        <div>
+            <p>Your feed: <a href="/feed/{{ g.user.feed_uuid }}.xml">RSS</a></p>
+        </div>
+
+        <p>
+
+        <a href="/subscriptions">Subscriptions</a> 
+        <a href="/filters">Filters</a> 
+        <a href="/videos">Videos</a> 
+        <a href="/logout">Logout</a> 
+        {% else %}
+        Logged out
+        {% endif %}
+        </p>
+    </div>
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{% extends "_base.html" %}
+{% block content %}
+<h1>Filters</h1>
+
+<table>
+    <thread>
+        <td>Channel</td>
+        <td>Channel ID</td>
+        <td>Filter (uncased regexp)</td>
+        <td>Whitelist</td>
+        <td>Actions</td>
+    </thread>
+    {% for filter in (filters | sort) %}
+    <tr>
+        <td>{{ filter.feed.title }}</td>
+        <td>{{ filter.feed.youtube_id }}</td>
+        <td>{{ filter.filter }}</td>
+        <td>{% if filter.whitelist %}yes{% endif %}</td>
+        <td>
+            <form action="filters/{{ filter.id }}?delete" method="post">
+                <button type="submit">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    <form action="/filters" method="post">
+        <tr>
+            <td></td>
+            <td><input type="text" id="youtube_id" name="youtube_id"{% if channel %} value="{{ channel }}"{% endif %}></td>
+            <td><input type="text" id="filter" name="filter"{% if filter %} value="{{ filter }}"{% endif %}></td>
+            <td><input type="checkbox" id="whitelist" name="whitelist" value="whitelist"></td>
+            <td><button type="submit">Add</button></td>
+        </tr>
+    </form>
+</table>
+{% endblock %}

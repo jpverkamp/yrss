@@ -1,0 +1,26 @@
+{% extends "_base.html" %}
+{% block content %}
+<h1>Recent Videos - {{ title }}</h1>
+
+<table>
+    <thread>
+        <td>Published</td>
+        <td>Channel</td>
+        <td>ID</td>
+        <td>Video</td>
+        <td>Filtered</td>
+        <td>Actions</td>
+    </thread>
+    {% for video in videos %}
+    <tr>
+        <td>{{ video.published }}</td>
+        <td>{{ video.feed.title }}</td>
+        <td>{{ video.feed.youtube_id }}</td>
+        <td>{{ video.title }}</td>
+        <td>{{ g.user.filtered(video) }}</td>
+        <td><a href="/filters?channel={{ video.feed.youtube_id | urlencode }}&filter={{ video.title | urlencode }}">Filter</a></td>
+    </tr>
+
+    {% endfor %}
+</table>
+{% endblock %}

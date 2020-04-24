@@ -1,4 +1,6 @@
-feedgen
+cachetools
 flask
-python-dateutil
+peewee
+peewee-extra-fields
 requests
+

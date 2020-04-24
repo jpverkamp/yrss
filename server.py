@@ -1,5 +1,4 @@
 import dateutil.parser
-import feedgen.feed
 import flask
 import functools
 import logging

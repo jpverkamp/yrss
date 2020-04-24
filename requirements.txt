@@ -1,6 +1,8 @@
+bcrypt
 cachetools
 flask
 peewee
 peewee-extra-fields
+python-dateutil
 requests
 

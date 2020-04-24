@@ -1,7 +1,7 @@
-import bcrypt
 import cachetools
 import datetime
 import logging
+import os
 import random
 import re
 import string
@@ -14,7 +14,8 @@ from peewee_extra_fields import PasswordField
 import youtube
 
 CACHE_TIME = int(os.getenv('CACHE_TIME', 60 * 60)) # default = 1 hour
-VIDEOS_PER_PAGE = int(os.getenv('VIDEOS_PER_PAGE', 100))
+RSS_COUNT = int(os.getenv('RSS_COUNT', 100))
+VIDEOS_PER_PAGE = 100
 
 db = SqliteDatabase("yrss2.db")
 
@@ -28,7 +29,7 @@ class User(BaseModel):
     updated = DateTimeField(default = datetime.datetime.now)
     feed_uuid = UUIDField(default = uuid.uuid4, unique = True)
 
-    def get_videos(self, n = VIDEOS_PER_PAGE):
+    def get_videos(self, n = RSS_COUNT):
         """Get the n most recent videos, skipping any that don"t match filters."""
 
         page = 0
@@ -111,21 +112,38 @@ class Feed(BaseModel):
 
     def refresh(self, force = False):
         since_last_update = (datetime.datetime.now() - self.updated).total_seconds()
-        if since_last_update < CACHE_TIME and not force:
-            logging.info(f"Skipping refresh for {self}, last updated {since_last_update} seconds ago")
-            return
+        if since_last_update < CACHE_TIME:
+            if force:
+                logging.info("Force updating {self}")
+            else:
+                return
+        else:
+            logging.info(f"Refreshing {self}")
+    
+        updated_something = False
 
         # Update channel metdata
         self.update(**youtube.get_channel(self.youtube_id))
+        if self.dirty_fields:
+            updated_something = True
+        self.updated = datetime.datetime.now()
         self.save()
 
         # Fetch feed and store/update the most recent videos
         for video_data in youtube.get_videos(self.uploads_id):
             try:
-                Video.create(feed = self, **video_data)
+                video = Video.create(feed = self, **video_data)
+                updated_something = True
+                logging.info(f"Created new video: {video}")
             except:
-                Video.update(feed = self, **video_data)
+                video = Video.get(feed = self)
+                video.update(**video_data)
+                if video.dirty_fields:
+                    logging.info(f"Updated video with new information: {video}")
+                    updated_something = True
+                    video.save()
 
+        return updated_something
 
     def __str__(self):
         return f"Feed<{self.title}, {self.youtube_id}>"

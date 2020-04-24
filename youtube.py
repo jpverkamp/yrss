@@ -1,6 +1,7 @@
 import datetime
 import functools
 import logging
+import os
 import requests
 
 API_KEY = os.getenv('API_KEY', None)
@@ -14,7 +15,7 @@ def _all(endpoint, **params):
         result = requests.get(url, params = params).json()
 
         if result['pageInfo']['totalResults'] > result['pageInfo']['resultsPerPage']:
-            logging.warning('TODO: implement paging')
+            logging.debug('TODO: implement paging')
 
         for item in result['items']:
             yield item

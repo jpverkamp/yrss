@@ -114,7 +114,7 @@ class Feed(BaseModel):
         since_last_update = (datetime.datetime.now() - self.updated).total_seconds()
         if since_last_update < CACHE_TIME:
             if force:
-                logging.info("Force updating {self}")
+                logging.info(f"Force updating {self}")
             else:
                 return
         else:

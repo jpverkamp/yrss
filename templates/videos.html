@@ -15,8 +15,8 @@
     <tr>
         <td>{{ video.published }}</td>
         <td>{{ video.feed.title }}</td>
-        <td>{{ video.feed.youtube_id }}</td>
-        <td>{{ video.title }}</td>
+        <td><a href="/videos/{{ video.feed.youtube_id }}">{{ video.feed.youtube_id }}</a></td>
+        <td><a href="https://www.youtube.com/watch?v={{ video.youtube_id }}">{{ video.title }}</a</td>
         <td>{{ g.user.filtered(video) }}</td>
         <td><a href="/filters?channel={{ video.feed.youtube_id | urlencode }}&filter={{ video.title | urlencode }}">Filter</a></td>
     </tr>

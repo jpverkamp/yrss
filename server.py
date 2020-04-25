@@ -84,7 +84,7 @@ def get_single_subscription(youtube_id):
             feed = Feed.get_or_none(youtube_id = id)
             if not feed:
                 feed = Feed.create(youtube_id = id)
-                
+
             return flask.render_template('confirm.html', feed = feed)
 
         else:
@@ -246,7 +246,7 @@ def register():
 @app.route('/legacy/<id_or_username>.xml')
 def legacy(id_or_username):
     youtube_id = youtube.get_id(id_or_username)
-    feed = Feed.get(youtube_id = youtube_id)
+    feed = Feed.get_or_create(youtube_id = youtube_id)[0]
 
     return flask.Response(
         flask.render_template('feed.xml', 

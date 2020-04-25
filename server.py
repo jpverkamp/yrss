@@ -5,6 +5,7 @@ import logging
 import re
 import urllib
 
+import youtube
 from models import *
 
 app = flask.Flask(__name__)
@@ -24,8 +25,11 @@ def require_user(f):
         if flask.g.user:
             return f(*args, **kwargs)
         else:
+            flask.session['return_to'] = flask.request.full_path
             flask.flash('You must be logged in to access that content')
             return flask.redirect('/')
+
+    wrapped.__name__ = f.__name__
     return wrapped
 
 @app.route('/')
@@ -35,24 +39,20 @@ def home():
     else:
         return flask.render_template('login.html')
 
-@require_user
 @app.route('/subscriptions', methods = ['GET', 'POST'])
+@require_user
 def get_subscriptions():
     if flask.request.method == 'GET':
         return flask.render_template('subscriptions.html', subscriptions = flask.g.user.subscriptions)
 
     # Adding a new subscription
     elif flask.request.method == 'POST' and 'id_or_title' in flask.request.form:
-        id_or_title = flask.request.form['id_or_title']
-
-        if len(id_or_title) == 24:
-            youtube_id = id_or_title
-        else:
-            youtube_id = youtube.get_channel_id_for_username(id_or_title)
-
+        youtube_id = youtube.get_id(flask.request.form['id_or_title'])
         feed = Feed.get_or_none(youtube_id = youtube_id)
+
         if not feed:
             feed = Feed.create(youtube_id = youtube_id)
+        
         feed.refresh()
         
         Subscription.create(
@@ -60,7 +60,7 @@ def get_subscriptions():
             feed = feed
         )
         
-        return flask.redirect('/')
+        return flask.redirect('/subscriptions')
 
     # Importing an opml file
     elif flask.request.method == 'POST' and 'opml' in flask.request.files:
@@ -74,10 +74,18 @@ def get_subscriptions():
         return flask.redirect('/subscriptions')
 
 @app.route('/subscriptions/<youtube_id>', methods = ['GET', 'POST', 'DELETE'])
+@require_user
 def get_single_subscription(youtube_id):
     # Display a single subscription
     if flask.request.method == 'GET':
-        raise Exception('Not implemented')
+        # Subscription request
+        if flask.request.method == 'GET' and 'confirm' in flask.request.args:
+            id = youtube.get_id(youtube_id)
+            feed = Feed.get(youtube_id = id)
+            return flask.render_template('confirm.html', feed = feed)
+
+        else:
+            raise Exception('Not implemented')
 
     # Delete a subscription
     elif flask.request.method == 'DELETE' or (flask.request.method == 'POST' or 'delete' in flask.request.args):
@@ -87,8 +95,8 @@ def get_single_subscription(youtube_id):
 
         return flask.redirect('/subscriptions')
 
-@require_user
 @app.route('/filters', methods =['GET', 'POST'])
+@require_user
 def get_feeds():
     # Display current filters, preload if given that option
     if flask.request.method == 'GET':
@@ -123,6 +131,7 @@ def get_feeds():
         return flask.redirect('/filters')
 
 @app.route('/filters/<id>', methods = ['GET', 'POST', 'DELETE'])
+@require_user
 def get_single_filters(id):
     # Display a single filter
     if flask.request.method == 'GET':
@@ -139,14 +148,15 @@ def get_single_filters(id):
 
         return flask.redirect('/filters')
 
-@require_user
 @app.route('/videos', methods = ['GET'])
+@require_user
 def get_videos():
     # Display current most recent videos
     if flask.request.method == 'GET':
         return flask.render_template('videos.html', title = 'Your Videos', videos = flask.g.user.get_videos())
 
 @app.route('/videos/<youtube_id>', methods = ['GET'])
+@require_user
 def get_single_feed(youtube_id):
     feed = Feed.get(youtube_id = youtube_id)
     videos = Video.select().join(Feed).where(Feed.id == feed.id)
@@ -185,6 +195,11 @@ def login():
     elif user.password.check_password(password):
         flask.flash('Logged in')
         flask.session['email'] = email
+
+        if 'return_to' in flask.session:
+            return_to = flask.session['return_to']
+            del flask.session['return_to']
+            return flask.redirect(return_to)
     else:
         flask.flash('Invalid username or password')
 
@@ -212,7 +227,13 @@ def register():
 
         flask.flash('New user created')
         flask.session['email'] = email
-        return flask.redirect('/')
+        
+        if 'return_to' in flask.session:
+            return_to = flask.session['return_to']
+            del flask.session['return_to']
+            return flask.redirect(return_to)
+        else:
+            return flask.redirect('/')
 
 # Legacy compatibility
 @app.route('/user/<id_or_username>.xml')
@@ -221,11 +242,7 @@ def register():
 @app.route('/channel/<id_or_username>/atom.xml')
 @app.route('/legacy/<id_or_username>.xml')
 def legacy(id_or_username):
-    if len(id_or_username) == 24:
-        youtube_id = id_or_username
-    else:
-        youtube_id = youtube.get_channel_id_for_username(id_or_username)
-
+    youtube_id = youtube.get_id(id_or_username)
     feed = Feed.get(youtube_id = youtube_id)
 
     return flask.Response(

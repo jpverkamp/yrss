@@ -30,6 +30,14 @@ def _one(endpoint, **params):
         return result
 
 @functools.lru_cache()
+def get_id(id):
+    print(id)
+    if len(id) == 24:
+        return id
+    else:
+        return get_channel_id_for_username(id)
+
+@functools.lru_cache()
 def get_channel_id_for_username(username):
     return _one('/channels', part = 'snippet', forUsername = username)['id']
 

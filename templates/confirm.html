@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% block content %}
+
+<p>Subscribe to {{ feed.title }} ({{ feed.youtube_id }})?</p>
+
+<form action="/subscriptions" method="post">
+    <input type="hidden" id="id_or_title" name="id_or_title" value="{{ feed.youtube_id }}" />
+    <button type="submit">Yes</button></td>
+</form>
+
+<form action="/subscriptions" method="get">
+    <button type="submit">No</button>
+ </form>
+
+{% endblock %}

@@ -81,7 +81,10 @@ def get_single_subscription(youtube_id):
         # Subscription request
         if flask.request.method == 'GET' and 'confirm' in flask.request.args:
             id = youtube.get_id(youtube_id)
-            feed = Feed.get(youtube_id = id)
+            feed = Feed.get_or_none(youtube_id = id)
+            if not feed:
+                feed = Feed.create(youtube_id = id)
+                
             return flask.render_template('confirm.html', feed = feed)
 
         else:

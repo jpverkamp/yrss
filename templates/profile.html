@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+{% block content %}
+<h1>Profile</h1>
+
+<p>Hello {{ user.email }}!</p>
+
+<h2>Change password</h2>
+<form action="/profile" method="post">
+    <div>
+        <label for="password">Old password:</label>
+        <input type="password" id="password" name="old-password">
+    </div>
+    <div>
+        <label for="password">New password:</label>
+        <input type="password" id="password" name="new-password">
+    </div>
+    <div>
+        <label for="password">Confirm new password:</label>
+        <input type="password" id="password" name="confirm-new-password">
+    </div>
+    <button type="submit" value="change-password">Change password</button>
+</form>
+{% endblock %}

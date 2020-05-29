@@ -39,6 +39,39 @@ def home():
     else:
         return flask.render_template('login.html')
 
+@app.route('/profile', methods = ['GET', 'POST'])
+@require_user
+def profile():
+    user = User.get(email = flask.session.get('email'))
+
+    if flask.request.method == 'GET':
+        return flask.render_template('profile.html', user = user)
+
+    elif flask.request.method == 'POST' and 'confirm-new-password' in flask.request.form:
+        if not user.password.check_password(flask.request.form.get('old-password')):
+            flask.flash('Incorrect password')
+
+        elif not flask.request.form.get('new-password') == flask.request.form.get('confirm-new-password'):
+            flask.flash('Passwords do not match')
+
+        else:
+            user.password = flask.request.form.get('new-password')
+            user.save()
+            flask.flash('Password changed')
+
+        return flask.redirect('/profile')
+
+    # Importing an opml file
+    elif flask.request.method == 'POST' and 'opml' in flask.request.files:
+        file = flask.request.files['opml']
+
+        user = User.get(email = flask.session.get('email'))
+        for youtube_id in re.findall(r'xmlUrl="https://www.youtube.com/feeds/videos.xml\?channel_id=(.*?)"', file.read().decode()):
+            feed = Feed.get_or_create(youtube_id = youtube_id)[0]
+            Subscription.get_or_create(user = user, feed = feed)
+        
+        return flask.redirect('/subscriptions')
+
 @app.route('/subscriptions', methods = ['GET', 'POST'])
 @require_user
 def get_subscriptions():

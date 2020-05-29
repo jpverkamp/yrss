@@ -12,15 +12,17 @@
     </thread>
     {% for filter in (filters | sort) %}
     <tr>
-        <td>{{ filter.feed.title }}</td>
-        <td>{{ filter.feed.youtube_id }}</td>
-        <td>{{ filter.filter }}</td>
-        <td>{% if filter.whitelist %}yes{% endif %}</td>
-        <td>
-            <form action="filters/{{ filter.id }}?delete" method="post">
-                <button type="submit">Delete</button>
-            </form>
-        </td>
+        <form action="filters/{{ filter.id }}" method="POST">
+            <td>{{ filter.feed.title }}</td>
+            <td><input type="text" name="youtube_id" value="{{ filter.feed.youtube_id }}" /></td>
+            <td><input type="text" name="filter" value="{{ filter.filter }}" /></td>
+            <td><input type="checkbox" name="whitelist" {% if filter.whitelist %}checked{% endif %} /></td>
+            <td>
+                <button name="action-save" type="submit">Save Changes</button>
+                <button name="action-delete" type="submit">Delete</button>
+                </form>
+            </td>
+        </form>
     </tr>
     {% endfor %}
     <form action="/filters" method="post">

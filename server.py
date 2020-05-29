@@ -169,20 +169,32 @@ def get_feeds():
 @app.route('/filters/<id>', methods = ['GET', 'POST', 'DELETE'])
 @require_user
 def get_single_filters(id):
-    # Display a single filter
-    if flask.request.method == 'GET':
-        raise Exception('Not implemented')
+    filter = Filter.get(id = id)
+    if filter.user != User.get(email = flask.session.get('email')):
+        flask.abort(403)
 
-    # Delete a filter
-    elif flask.request.method == 'DELETE' or (flask.request.method == 'POST' or 'delete' in flask.request.args):
+    if flask.request.method == 'GET':
+        raise NotImplementedError
+
+    elif flask.request.method == 'POST' and 'action-save' in flask.request.form:
+        filter.feed = Feed.get(Feed.youtube_id == flask.request.form.get('youtube_id'))
+        filter.filter = flask.request.form.get('filter')
+        filter.whitelist = flask.request.form.get('whitelist', 'off').lower() == 'on'
+        filter.save()
+
+        flask.flash('Filter saved')
+
+
+    elif flask.request.method == 'DELETE' or (flask.request.method == 'POST' or 'action-delete' in flask.request.form):
         filter = Filter.get(id = id)
 
         if filter.user != User.get(email = flask.session.get('email')):
             flask.abort(403)
 
         filter.delete_instance()
+        flask.flash('Filter deleted')
 
-        return flask.redirect('/filters')
+    return flask.redirect('/filters')
 
 @app.route('/videos', methods = ['GET'])
 @require_user

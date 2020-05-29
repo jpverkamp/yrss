@@ -4,6 +4,7 @@
 import logging
 import threading
 import time
+import os
 
 logging.basicConfig(format='[%(levelname)s] %(funcName)s: %(message)s', level = logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,15 +14,18 @@ import models
 import server
 
 # Ask each user to update once per ten minutes
-def update_thread():
-    while True:
-        logging.info('Checking feeds for updates')
-        for feed in models.Feed().select():
-            feed.refresh()
+if 'YRSS_DEBUG' in os.environ:
+    logging.info('Running in debug mode, skipping update thread')
+else:
+    def update_thread():
+        while True:
+            logging.info('Checking feeds for updates')
+            for feed in models.Feed().select():
+                feed.refresh()
 
-        time.sleep(10 * 60)
+            time.sleep(10 * 60)
 
-threading.Thread(target = update_thread, daemon = True).start()
+    threading.Thread(target = update_thread, daemon = True).start()
 
 if __name__ == '__main__':
     server.app.run(host = '0.0.0.0')

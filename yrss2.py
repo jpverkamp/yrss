@@ -21,7 +21,10 @@ else:
         while True:
             logging.info('Checking feeds for updates')
             for feed in models.Feed().select():
-                feed.refresh()
+                try:
+                    feed.refresh()
+                except Exception as ex:
+                    logging.warning(f'Exception in refresh loop ({ex})')
 
             time.sleep(10 * 60)
 

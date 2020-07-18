@@ -80,7 +80,12 @@ def get_subscriptions():
 
     # Adding a new subscription
     elif flask.request.method == 'POST' and 'id_or_title' in flask.request.form:
-        youtube_id = youtube.get_id(flask.request.form['id_or_title'])
+        try:
+            youtube_id = youtube.get_id(flask.request.form['id_or_title'])
+        except Exception as ex:
+            flask.flash(f'Unable to add {flask.request.form["id_or_title"]}, could not find subscription')
+            return flask.redirect('/subscriptions')
+
         feed = Feed.get_or_none(youtube_id = youtube_id)
 
         if not feed:

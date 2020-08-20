@@ -1,9 +1,10 @@
+import cachetools
 import datetime
-import functools
 import logging
 import os
 import requests
 
+CACHE_TIME = int(os.getenv('CACHE_TIME', 60 * 60)) # default = 1 hour
 API_KEY = os.getenv('API_KEY', None)
 
 def _all(endpoint, **params):
@@ -14,8 +15,8 @@ def _all(endpoint, **params):
     try:
         result = requests.get(url, params = params).json()
 
-        if result['pageInfo']['totalResults'] > result['pageInfo']['resultsPerPage']:
-            logging.debug('TODO: implement paging')
+        #if result['pageInfo']['totalResults'] > result['pageInfo']['resultsPerPage']:
+        #    logging.debug('TODO: implement paging')
 
         for item in result['items']:
             yield item
@@ -29,7 +30,7 @@ def _one(endpoint, **params):
     for result in _all(endpoint, **params):
         return result
 
-@functools.lru_cache()
+@cachetools.cached(cache = cachetools.TTLCache(maxsize = 1024, ttl = CACHE_TIME))
 def get_id(id):
     print(id)
     if len(id) == 24:
@@ -37,10 +38,11 @@ def get_id(id):
     else:
         return get_channel_id_for_username(id)
 
-@functools.lru_cache()
+@cachetools.cached(cache = cachetools.TTLCache(maxsize = 1024, ttl = CACHE_TIME))
 def get_channel_id_for_username(username):
     return _one('/channels', part = 'snippet', forUsername = username)['id']
 
+@cachetools.cached(cache = cachetools.TTLCache(maxsize = 1024, ttl = CACHE_TIME))
 def get_channel(id):
     data = _one('/channels', part = 'snippet,contentDetails', id = id)
 
@@ -53,6 +55,7 @@ def get_channel(id):
         'uploads_id': data['contentDetails']['relatedPlaylists']['uploads'],
     }
 
+@cachetools.cached(cache = cachetools.TTLCache(maxsize = 1024, ttl = CACHE_TIME))
 def get_videos(id):
     for video in _all('/playlistItems', part = 'snippet', maxResults = 20, playlistId = id):
         yield {

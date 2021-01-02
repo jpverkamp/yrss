@@ -5,4 +5,4 @@ peewee
 peewee-extra-fields
 python-dateutil
 requests
-
+youtube_dl

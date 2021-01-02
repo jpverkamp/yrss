@@ -5,6 +5,7 @@ import logging
 import re
 import requests
 import urllib
+import youtube_dl
 
 import youtube
 from models import *
@@ -154,6 +155,22 @@ def get_single_subscription(youtube_id):
 
         return flask.redirect('/subscriptions')
 
+@app.route('/audio/<youtube_id>', methods = ['GET'])
+def serve_mp3(youtube_id):
+    if not re.match(r'^[a-zA-Z0-9_-]+$', youtube_id):
+        raise Exception('Close but no cigar')
+
+    os.makedirs('data', exist_ok=True)
+
+    uri = f'http://www.youtube.com/watch?v={youtube_id}'
+    ydl_opts = {'format': 'worstaudio/worst'}
+
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(uri, download=True)
+        output_filename = ydl.prepare_filename(info)
+            
+    return flask.send_file(output_filename)
+
 @app.route('/filters', methods =['GET', 'POST'])
 @require_user
 def get_feeds():
@@ -231,9 +248,6 @@ def get_videos():
 def get_single_feed(youtube_id):
     feed = Feed.get(youtube_id = youtube_id)
     videos = Video.select().join(Feed).where(Feed.id == feed.id)
-
-    print(feed)
-    print(videos)
 
     return flask.render_template('videos.html', title = feed.title, videos = videos)
 
@@ -317,7 +331,7 @@ def legacy(id_or_username):
     feed = Feed.get_or_create(youtube_id = youtube_id)[0]
 
     return flask.Response(
-        flask.render_template('feed.xml', 
+        flask.render_template('podcast.xml' if 'podcast' in flask.request.args else 'feed.xml', 
             title = feed.title,
             path = f'/legacy/{feed.youtube_id}.xml',
             updated = feed.updated,

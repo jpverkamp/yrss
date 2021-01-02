@@ -163,7 +163,10 @@ def serve_mp3(youtube_id):
     os.makedirs('data', exist_ok=True)
 
     uri = f'http://www.youtube.com/watch?v={youtube_id}'
-    ydl_opts = {'format': 'worstaudio/worst'}
+    ydl_opts = {
+        'format': 'worstaudio/worst',
+        'outtpl': f'data/{youtube_id}.%(ext)s',
+    }
 
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(uri, download=True)

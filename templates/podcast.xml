@@ -28,8 +28,8 @@
                     </a>
                 ]]>
             </description>
-            <link>{{ request.host_url }}audio/{{ video.youtube_id }}</link>
-            <enclosure url="{{ request.host_url }}audio/{{ video.youtube_id }}" type="audio/mpeg" length="1024"></enclosure>
+            <link>{{ request.host_url }}audio/{{ video.youtube_id }}.mp3</link>
+            <enclosure url="{{ request.host_url }}audio/{{ video.youtube_id }}.mp3" type="audio/mpeg" length="1024"></enclosure>
             <pubDate>{{ video.published }}</pubDate>
             <itunes:author></itunes:author>
             <itunes:duration>00:00:01</itunes:duration>

@@ -4,6 +4,9 @@ import functools
 import logging
 import re
 import requests
+import shutil
+import threading
+import time
 import urllib
 import youtube_dl
 
@@ -155,24 +158,56 @@ def get_single_subscription(youtube_id):
 
         return flask.redirect('/subscriptions')
 
-@app.route('/audio/<youtube_id>', methods = ['GET'])
+@app.route('/audio/<youtube_id>.mp3', methods = ['GET'])
 def serve_mp3(youtube_id):
-    if not re.match(r'^[a-zA-Z0-9_-]+$', youtube_id):
-        raise Exception('Close but no cigar')
+    if not hasattr(serve_mp3, 'thread_cache'):
+        serve_mp3.thread_cache = {}
 
     os.makedirs('data', exist_ok=True)
 
-    uri = f'http://www.youtube.com/watch?v={youtube_id}'
-    ydl_opts = {
-        'format': 'worstaudio/worst',
-        'outtpl': f'data/{youtube_id}.%(ext)s',
-    }
+    if not re.match(r'^[a-zA-Z0-9_-]+$', youtube_id):
+        raise Exception('Close but no cigar')
 
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(uri, download=True)
-        output_filename = ydl.prepare_filename(info)
+    ydl_filename = f'data/temp-{youtube_id}.%(ext)s'
+    mp3_filename = f'data/{youtube_id}.mp3'
+
+    # File already exists (cached), just send it
+    if os.path.exists(mp3_filename):
+        return flask.send_file(mp3_filename)
+
+    # Start a download thread if one isn't already running
+    if youtube_id not in serve_mp3.thread_cache:
+        def fetch():
+            logging.info(f'Starting mp3 download of {youtube_id} to {mp3_filename}')
+
+            uri = f'http://www.youtube.com/watch?v={youtube_id}'
+            ydl_opts = {
+                'format': 'worstaudio/worst',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '96',
+                }],
+                'outtmpl': ydl_filename,
+            }
+
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(uri, download=True)
+                output_filename = ydl.prepare_filename(info)
+
+            shutil.move(ydl_filename % {'ext': 'mp3'}, mp3_filename)
+            logging.info(f'Completed mp3 download of {youtube_id} to {mp3_filename}')
             
-    return flask.send_file(output_filename)
+            downloaded = True
+            del serve_mp3.thread_cache[youtube_id]
+
+        # Don't start a second thread if one has already been created
+        serve_mp3.thread_cache[youtube_id] = threading.Thread(target = fetch, daemon = True)
+        serve_mp3.thread_cache[youtube_id].start()
+
+    # Wait 10 seconds and serve a redirect (loop client side until done or the client gives up)
+    time.sleep(10)
+    return flask.redirect(flask.request.url)
 
 @app.route('/filters', methods =['GET', 'POST'])
 @require_user

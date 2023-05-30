@@ -80,17 +80,24 @@ def get_subscriptions():
     if flask.request.method == 'GET' and 'url' in flask.request.args:
         url = flask.request.args['url']
         response = requests.get(url)
-        match = re.search('<meta itemprop="channelId" content="(.*?)">', response.text)
-        if match:
-            id = match.group(1)
-            feed = Feed.get_or_none(youtube_id = id)
-            if not feed:
-                feed = Feed.create(youtube_id = id)
 
-            return flask.render_template('confirm.html', feed = feed)
-        else:
-            flask.flash(f'Unable to fetch URL: {url}')
-            return flask.redirect('/')
+        channel_id_regexes = [
+            r'<meta itemprop="channelId" content="(.*?)">',
+            r'ChannelId":"(.*?)"',
+        ]
+
+        for channel_id_regex in channel_id_regexes:
+            match = re.search(channel_id_regex, response.text)
+            if match:
+                id = match.group(1)
+                feed = Feed.get_or_none(youtube_id = id)
+                if not feed:
+                    feed = Feed.create(youtube_id = id)
+
+                return flask.render_template('confirm.html', feed = feed)
+
+        flask.flash(f'Unable to fetch URL: {url}')
+        return flask.redirect('/')
 
     # List subscriptions
     elif flask.request.method == 'GET':

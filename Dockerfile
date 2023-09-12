@@ -1,9 +1,9 @@
-FROM python:3.8
+FROM python:3.10
 EXPOSE 5000
 WORKDIR /app
 
 RUN pip install poetry
-ADD poetry.lock pyproject.toml .
+ADD poetry.lock pyproject.toml ./
 RUN poetry install
 
 ADD . .

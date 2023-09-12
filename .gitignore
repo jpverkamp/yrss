@@ -5,6 +5,7 @@ __pycache__/
 
 # YRSS cache and configuration files
 .cache/
+.env
 env.conf
 yrss2.db
 

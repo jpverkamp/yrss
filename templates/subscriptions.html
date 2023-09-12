@@ -2,36 +2,39 @@
 {% block content %}
 <h1>Subscriptions</h1>
 
-<table>
-    <thread>
-        <td>Channel</td>
-        <td>ID</td>
-        <td>Actions</td>
-    </thread>
-    {% for subscription in (subscriptions | sort) %}
-    <tr>
-        <td>{{ subscription.feed.title }}</td>
-        <td><a href="/videos/{{ subscription.feed.youtube_id }}">{{ subscription.feed.youtube_id }}</a></td>
-        <td>
-            <form action="/subscriptions/{{ subscription.feed.youtube_id }}?delete" method="post">
-                <button type="submit">Unsubscribe</button>
-            </form>
-        </td>
-    </tr>
-    {% endfor %}
-    <tr>
-        <form action="/subscriptions" method="post">
-            <td>Import</td>
-            <td><input type="text" id="id_or_title" name="id_or_title"></td>
-            <td><button type="submit">Add</button></td>
-        </form>
-    </tr>
-    <tr>
-        <form action="/subscriptions/import" enctype="multipart/form-data" method="post">
-            <td>Import <a href="https://www.youtube.com/subscription_manager">OPML file</a></td>
-            <td><input type="file" id="opml" name="opml"></td>
-            <td><button type="submit">Import</button></td>
-        </form>
-    </tr>
+<table class="table">
+    <thead>
+        <th scope="col">Channel</th>
+        <th scope="col">Last Video</th>
+        <th scope="col">Last 30 Days (ignores filters)</th>
+        <th scope="col">Actions</th>
+    </thead>
+    <tbody>
+        {% for subscription in (subscriptions | sort) %}
+        <tr>
+            <td><a href="/videos/{{ subscription.feed.youtube_id }}">{{ subscription.feed.title }}</a></td>
+            <td>{{ subscription.last_published_date }}</td>
+            <td>{{ subscription.video_count_30_days }}</td>
+            <td>
+                <form action="/subscriptions/{{ subscription.feed.youtube_id }}?delete" method="post">
+                    <button type="submit">Unsubscribe</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
+
+<h2>Add Subscription</h2>
+<form action="/subscriptions" method="post">
+    <input type="text" id="id_or_title" name="id_or_title">
+    <button type="submit">Add</button>
+</form>
+
+<h2>Import Subscriptions</h2>
+<form action="/subscriptions/import" enctype="multipart/form-data" method="post">
+    Import <a href="https://www.youtube.com/subscription_manager">OPML file:</a>
+    <input type="file" id="opml" name="opml">
+    <button type="submit">Import</button>
+</form>
 {% endblock %}

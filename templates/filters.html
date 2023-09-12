@@ -2,37 +2,39 @@
 {% block content %}
 <h1>Filters</h1>
 
-<table>
-    <thread>
-        <td>Channel</td>
-        <td>Channel ID</td>
-        <td>Filter (uncased regexp)</td>
-        <td>Whitelist</td>
-        <td>Actions</td>
-    </thread>
+<table class="table">
+    <thead>
+        <th>Channel</th>
+        <th>Channel ID</th>
+        <th>Filter (uncased regexp)</th>
+        <th>Whitelist</th>
+        <th>Actions</th>
+    </thead>
+    <tbody>
     {% for filter in (filters | sort) %}
-    <tr>
-        <form action="filters/{{ filter.id }}" method="POST">
-            <td>{{ filter.feed.title }}</td>
-            <td><input type="text" name="youtube_id" value="{{ filter.feed.youtube_id }}" /></td>
-            <td><input type="text" name="filter" value="{{ filter.filter }}" /></td>
-            <td><input type="checkbox" name="whitelist" {% if filter.whitelist %}checked{% endif %} /></td>
-            <td>
-                <button name="action-save" type="submit">Save Changes</button>
-                <button name="action-delete" type="submit">Delete</button>
-                </form>
-            </td>
-        </form>
-    </tr>
-    {% endfor %}
-    <form action="/filters" method="post">
         <tr>
-            <td></td>
-            <td><input type="text" id="youtube_id" name="youtube_id"{% if channel %} value="{{ channel }}"{% endif %}></td>
-            <td><input type="text" id="filter" name="filter"{% if filter %} value="{{ filter }}"{% endif %}></td>
-            <td><input type="checkbox" id="whitelist" name="whitelist" value="whitelist"></td>
-            <td><button type="submit">Add</button></td>
+            <form action="filters/{{ filter.id }}" method="POST">
+                <td>{{ filter.feed.title }}</td>
+                <td><input type="text" name="youtube_id" value="{{ filter.feed.youtube_id }}" /></td>
+                <td><input type="text" name="filter" value="{{ filter.filter }}" /></td>
+                <td><input type="checkbox" name="whitelist" {% if filter.whitelist %}checked{% endif %} /></td>
+                <td>
+                    <button name="action-save" type="submit">Save Changes</button>
+                    <button name="action-delete" type="submit">Delete</button>
+                    </form>
+                </td>
+            </form>
         </tr>
-    </form>
+    {% endfor %}
+    </tbody>
 </table>
+
+<h2>Add Filter</h2>
+<form action="/filters" method="post">
+    <input placeholder="Channel ID" type="text" id="youtube_id" name="youtube_id"{% if channel %} value="{{ channel }}"{% endif %}><br>
+    <input placeholder="Filter Regex" type="text" id="filter" name="filter"{% if filter %} value="{{ filter }}"{% endif %}><br>
+    Whitelist? <input type="checkbox" id="whitelist" name="whitelist" value="whitelist"><br>
+    <button type="submit">Add</button>
+</form>
+
 {% endblock %}

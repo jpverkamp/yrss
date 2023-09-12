@@ -2,25 +2,26 @@
 {% block content %}
 <h1>Recent Videos - {{ title }}</h1>
 
-<table>
-    <thread>
-        <td>Published</td>
-        <td>Channel</td>
-        <td>ID</td>
-        <td>Video</td>
-        <td>Filtered</td>
-        <td>Actions</td>
-    </thread>
-    {% for video in videos %}
-    <tr>
-        <td>{{ video.published }}</td>
-        <td>{{ video.feed.title }}</td>
-        <td><a href="/videos/{{ video.feed.youtube_id }}">{{ video.feed.youtube_id }}</a></td>
-        <td><a href="https://www.youtube.com/watch?v={{ video.youtube_id }}">{{ video.title }}</a</td>
-        <td>{{ g.user.filtered(video) }}</td>
-        <td><a href="/filters?channel={{ video.feed.youtube_id | urlencode }}&filter={{ video.title | urlencode }}">Filter</a></td>
-    </tr>
-
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Published</th>
+            <th scope="col">Channel</th>
+            <th scope="col">Video</th>
+            <th scope="col">Filtered</th>
+            <th scope="col">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for video in (videos | sort | reverse) %}
+        <tr>
+            <td>{{ video.published }}</td>
+            <td><a href="/videos/{{ video.feed.youtube_id }}">{{ video.feed.title }}</a></td>
+            <td><a href="https://www.youtube.com/watch?v={{ video.youtube_id }}">{{ video.title }}</a</td>
+            <td>{{ g.user.filtered(video) }}</td>
+            <td><a href="/filters?channel={{ video.feed.youtube_id | urlencode }}&filter={{ video.title | urlencode }}">Filter</a></td>
+        </tr>
     {% endfor %}
+    </tbody>
 </table>
 {% endblock %}

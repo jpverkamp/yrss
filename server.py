@@ -2,6 +2,7 @@ import dateutil.parser
 import flask
 import functools
 import logging
+import peewee
 import re
 import requests
 import urllib
@@ -101,7 +102,24 @@ def get_subscriptions():
 
     # List subscriptions
     elif flask.request.method == 'GET':
-        return flask.render_template('subscriptions.html', subscriptions = flask.g.user.subscriptions)
+        thirty_days_ago = datetime.datetime.now() - datetime.timedelta(days=30)
+
+        query = (
+            Subscription
+            .select(
+                Subscription,
+                Feed,
+                peewee.fn.MAX(Video.published).alias('last_published_date'),
+                peewee.fn.COUNT(Video.id).alias('video_count_30_days')
+            )
+            .where(Subscription.user == flask.g.user)
+            .join(Feed, peewee.JOIN.LEFT_OUTER, on=(Subscription.feed == Feed.id))
+            .join(Video, peewee.JOIN.LEFT_OUTER, on=(Feed.id == Video.feed), )
+            .where(Video.published >= thirty_days_ago)
+            .group_by(Subscription, Feed)
+        )
+
+        return flask.render_template('subscriptions.html', subscriptions = query)
 
     # Adding a new subscription
     elif flask.request.method == 'POST' and 'id_or_title' in flask.request.form:
@@ -239,9 +257,6 @@ def get_single_feed(youtube_id):
     feed = Feed.get(youtube_id = youtube_id)
     videos = Video.select().join(Feed).where(Feed.id == feed.id)
 
-    print(feed)
-    print(videos)
-
     return flask.render_template('videos.html', title = feed.title, videos = videos)
 
 @app.route('/feed/<uuid>.xml', methods = ['GET'])
@@ -249,6 +264,7 @@ def get_feed(uuid):
     user = User.get(feed_uuid = uuid)
     videos = user.get_videos()
     updated = user.updated
+
     for video in videos:
         updated = max(updated, video.updated)
 

@@ -173,6 +173,9 @@ class Video(BaseModel):
 
     def __str__(self):
         return f"Video<{self.title}, {self.youtube_id}, {self.feed}>"
+    
+    def __lt__(self, other):
+        return self.published < other.published
 
 class Subscription(BaseModel):
     user = ForeignKeyField(User, backref = "subscriptions")

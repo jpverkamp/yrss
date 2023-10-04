@@ -28,7 +28,7 @@ else:
 
             time.sleep(10 * 60)
 
-    threading.Thread(target = update_thread, daemon = True).start()
+    #threading.Thread(target = update_thread, daemon = True).start()
 
 if __name__ == '__main__':
-    server.app.run(host = '0.0.0.0')
+    server.app.run(host = '0.0.0.0', debug=True)

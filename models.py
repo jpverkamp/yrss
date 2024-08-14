@@ -30,7 +30,7 @@ class User(BaseModel):
     updated = DateTimeField(default = datetime.datetime.now)
     feed_uuid = UUIDField(default = uuid.uuid4, unique = True)
 
-    def get_videos(self, n=YRSS_RSS_COUNT):
+    def get_videos(self, n=YRSS_RSS_COUNT, include_shorts=True):
         """Get the n most recent videos, skipping any that don"t match filters."""
 
         page = 0
@@ -47,8 +47,12 @@ class User(BaseModel):
                 .join(User)
                 .where(User.id == self.id)
                 .order_by(Video.published.desc())
-                .paginate(page, VIDEOS_PER_PAGE)
             )
+
+            if not include_shorts:
+                videos = videos.where(Video.short == False)
+
+            videos = videos.paginate(page, VIDEOS_PER_PAGE)
 
             for video in videos:
                 empty_page = False
@@ -160,17 +164,20 @@ class Feed(BaseModel):
 
         return updated_something
 
-    def get_videos(self, n=YRSS_RSS_COUNT):
+    def get_videos(self, n=YRSS_RSS_COUNT, include_shorts=True):
         """Get the n most recent videos"""
 
         videos = (
             Video.select()
             .join(Feed)
             .where(Feed.id == self.id)
-            .where(Video.short == False)
             .order_by(Video.published.desc())
-            .paginate(1, YRSS_RSS_COUNT)
         )
+
+        if not include_shorts:
+            videos = videos.where(Video.short == False)
+
+        videos = videos.paginate(1, YRSS_RSS_COUNT)
 
         for video in videos:
             yield video

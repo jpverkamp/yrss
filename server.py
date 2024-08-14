@@ -249,7 +249,11 @@ def get_single_filters(id):
 def get_videos():
     # Display current most recent videos
     if flask.request.method == 'GET':
-        return flask.render_template('videos.html', title = 'Your Videos', videos = flask.g.user.get_videos())
+        return flask.render_template(
+            "videos.html",
+            title="Your Videos",
+            videos=flask.g.user.get_videos(include_shorts=True),
+        )
 
 @app.route('/videos/<youtube_id>', methods = ['GET'])
 @require_user
@@ -262,7 +266,7 @@ def get_single_feed(youtube_id):
 @app.route('/feed/<uuid>.xml', methods = ['GET'])
 def get_feed(uuid):
     user = User.get(feed_uuid = uuid)
-    videos = user.get_videos()
+    videos = user.get_videos(include_shorts=False)  # TODO: Parameterize this
     updated = user.updated
 
     for video in videos:

@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+import requests
 import string
 import sqlite3
 import uuid
@@ -60,7 +61,7 @@ class User(BaseModel):
 
                 if count == n:
                     return
-            
+
             if empty_page:
                 return
 
@@ -132,6 +133,20 @@ class Feed(BaseModel):
         # Fetch feed and store/update the most recent videos
         for video_data in youtube.get_videos(self.uploads_id):
             try:
+                # Newly created videos should also check if they're shorts
+                # https://stackoverflow.com/questions/71192605/how-do-i-get-youtube-shorts-from-youtube-api-data-v3
+                youtube_id = video_data["youtube_id"]
+                response = requests.head(
+                    f"https://www.youtube.com/shorts/{youtube_id}",
+                    allow_redirects=False,
+                )
+                video.short = not (
+                    response.status_code >= 300 and response.status_code < 400
+                )
+
+                updated_something = True
+                video.save()
+
                 video = Video.create(feed = self, **video_data)
                 updated_something = True
                 logging.info(f"Created new video: {video}")
@@ -171,10 +186,11 @@ class Video(BaseModel):
     updated = DateTimeField()
     description = TextField()
     thumbnail = TextField()
+    short = BooleanField()
 
     def __str__(self):
         return f"Video<{self.title}, {self.youtube_id}, {self.feed}>"
-    
+
     def __lt__(self, other):
         return self.published < other.published
 

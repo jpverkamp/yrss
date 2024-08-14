@@ -9,6 +9,7 @@
             <th scope="col">Channel</th>
             <th scope="col">Video</th>
             <th scope="col">Filtered</th>
+            <th scope="col">Short</th>
             <th scope="col">Actions</th>
         </tr>
     </thead>
@@ -19,6 +20,7 @@
             <td><a href="/videos/{{ video.feed.youtube_id }}">{{ video.feed.title }}</a></td>
             <td><a href="https://www.youtube.com/watch?v={{ video.youtube_id }}">{{ video.title }}</a</td>
             <td>{{ g.user.filtered(video) }}</td>
+            <td>{{ video.short }}</td>
             <td><a href="/filters?channel={{ video.feed.youtube_id | urlencode }}&filter={{ video.title | urlencode }}">Filter</a></td>
         </tr>
     {% endfor %}

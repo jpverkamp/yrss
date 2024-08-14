@@ -273,13 +273,16 @@ def get_feed(uuid):
         updated = max(updated, video.updated)
 
     return flask.Response(
-        flask.render_template('feed.xml', 
-            title = user.email,
-            path = f'/feed/{user.feed_uuid}.xml',
-            updated = updated,
-            videos = user.get_videos(),
+        flask.render_template(
+            "feed.xml",
+            title=user.email,
+            path=f"/feed/{user.feed_uuid}.xml",
+            updated=updated,
+            videos=user.get_videos(
+                include_shorts=False
+            ),  # TODO: Why is this fetched twice?
         ),
-        mimetype='application/atom+xml'
+        mimetype="application/atom+xml",
     )
 
 @app.route('/login', methods = ['POST'])

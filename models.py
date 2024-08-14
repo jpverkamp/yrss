@@ -177,6 +177,11 @@ class Feed(BaseModel):
 
         return updated_something
 
+    def is_used(self):
+        """Check if any subscription subscribes to this feed."""
+
+        return Subscription.select().where(Subscription.feed == self).exists()
+
     def get_videos(self, n=YRSS_RSS_COUNT, include_shorts=True):
         """Get the n most recent videos"""
 

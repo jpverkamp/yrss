@@ -9,7 +9,16 @@ import string
 import sqlite3
 import uuid
 
-from peewee import Model, SqliteDatabase, TextField, DateTimeField, ForeignKeyField, CompositeKey, BooleanField, UUIDField
+from peewee import (
+    Model,
+    SqliteDatabase,
+    TextField,
+    DateTimeField,
+    ForeignKeyField,
+    CompositeKey,
+    BooleanField,
+    UUIDField,
+)
 from peewee_extra_fields import PasswordField
 
 import youtube
@@ -20,15 +29,17 @@ VIDEOS_PER_PAGE = 100
 
 db = SqliteDatabase("yrss2.db")
 
+
 class BaseModel(Model):
     class Meta:
         database = db
 
+
 class User(BaseModel):
-    email = TextField(unique = True)
+    email = TextField(unique=True)
     password = PasswordField()
-    updated = DateTimeField(default = datetime.datetime.now)
-    feed_uuid = UUIDField(default = uuid.uuid4, unique = True)
+    updated = DateTimeField(default=datetime.datetime.now)
+    feed_uuid = UUIDField(default=uuid.uuid4, unique=True)
 
     def get_videos(self, n=YRSS_RSS_COUNT, include_shorts=True):
         """Get the n most recent videos, skipping any that don"t match filters."""
@@ -69,17 +80,18 @@ class User(BaseModel):
             if empty_page:
                 return
 
-    @cachetools.cached(cache = cachetools.TTLCache(1024, 10))
+    @cachetools.cached(cache=cachetools.TTLCache(1024, 10))
     def filters_for(self, feed_id):
         filters = (
             Filter.select()
             .join(Feed)
-            .switch(Filter).join(User)
+            .switch(Filter)
+            .join(User)
             .where(User.id == self.id and Feed.id == feed_id)
         )
 
         return [
-            (re.compile(filter.filter, flags = re.IGNORECASE), filter.whitelist)
+            (re.compile(filter.filter, flags=re.IGNORECASE), filter.whitelist)
             for filter in filters
         ]
 
@@ -98,10 +110,11 @@ class User(BaseModel):
     def __str__(self):
         return f"User<{self.email}>"
 
+
 class Feed(BaseModel):
-    youtube_id = TextField(unique = True)
+    youtube_id = TextField(unique=True)
     title = TextField()
-    updated = DateTimeField(default = datetime.datetime.now)
+    updated = DateTimeField(default=datetime.datetime.now)
     logo = TextField()
     description = TextField()
     uploads_id = TextField()
@@ -112,10 +125,10 @@ class Feed(BaseModel):
         data.update(kwargs)
 
         feed = super(Feed, cls).create(**data)
-        feed.refresh(force = True)
+        feed.refresh(force=True)
         return feed
 
-    def refresh(self, force = False):
+    def refresh(self, force=False):
         since_last_update = (datetime.datetime.now() - self.updated).total_seconds()
         if since_last_update < YRSS_CACHE_TIME:
             if force:
@@ -151,11 +164,11 @@ class Feed(BaseModel):
                 updated_something = True
                 video.save()
 
-                video = Video.create(feed = self, **video_data)
+                video = Video.create(feed=self, **video_data)
                 updated_something = True
                 logging.info(f"Created new video: {video}")
             except:
-                video = Video.get(feed = self)
+                video = Video.get(feed=self)
                 video.update(**video_data)
                 if video.dirty_fields:
                     logging.info(f"Updated video with new information: {video}")
@@ -185,9 +198,10 @@ class Feed(BaseModel):
     def __str__(self):
         return f"Feed<{self.title}, {self.youtube_id}>"
 
+
 class Video(BaseModel):
-    youtube_id = TextField(unique = True)
-    feed = ForeignKeyField(Feed, backref = "videos")
+    youtube_id = TextField(unique=True)
+    feed = ForeignKeyField(Feed, backref="videos")
     title = TextField()
     published = DateTimeField()
     updated = DateTimeField()
@@ -201,21 +215,23 @@ class Video(BaseModel):
     def __lt__(self, other):
         return self.published < other.published
 
+
 class Subscription(BaseModel):
-    user = ForeignKeyField(User, backref = "subscriptions")
+    user = ForeignKeyField(User, backref="subscriptions")
     feed = ForeignKeyField(Feed)
 
     class Meta:
         primary_key = CompositeKey("user", "feed")
-    
+
     def __str__(self):
         return f"Subscription<{self.user}, {self.feed}>"
 
     def __lt__(self, other):
         return self.feed.title.lower() < other.feed.title.lower()
 
+
 class Filter(BaseModel):
-    user = ForeignKeyField(User, backref = "filters")
+    user = ForeignKeyField(User, backref="filters")
     feed = ForeignKeyField(Feed)
     filter = TextField()
     whitelist = BooleanField()
@@ -225,6 +241,7 @@ class Filter(BaseModel):
 
     def __lt__(self, other):
         return self.feed.title.lower() < other.feed.title.lower()
+
 
 db.connect()
 db.create_tables([User, Feed, Video, Subscription, Filter])

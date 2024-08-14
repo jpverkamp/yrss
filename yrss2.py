@@ -13,6 +13,10 @@ logger.setLevel(logging.DEBUG)
 import models
 import server
 
+if "YRSS_API_KEY" not in os.environ:
+    logging.error("YRSS_API_KEY environment variable is required")
+    exit(1)
+
 # Ask each user to update once per ten minutes
 if 'YRSS_DEBUG' in os.environ:
     logging.info('Running in debug mode, skipping update thread')

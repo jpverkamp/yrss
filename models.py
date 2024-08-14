@@ -13,8 +13,8 @@ from peewee_extra_fields import PasswordField
 
 import youtube
 
-CACHE_TIME = int(os.getenv('CACHE_TIME', 60 * 60)) # default = 1 hour
-RSS_COUNT = int(os.getenv('RSS_COUNT', 100))
+YRSS_CACHE_TIME = int(os.getenv("YRSS_CACHE_TIME", 60 * 60))  # default = 1 hour
+YRSS_RSS_COUNT = int(os.getenv("YRSS_CACHE_TIME", 100))
 VIDEOS_PER_PAGE = 100
 
 db = SqliteDatabase("yrss2.db")
@@ -29,7 +29,7 @@ class User(BaseModel):
     updated = DateTimeField(default = datetime.datetime.now)
     feed_uuid = UUIDField(default = uuid.uuid4, unique = True)
 
-    def get_videos(self, n = RSS_COUNT):
+    def get_videos(self, n=YRSS_RSS_COUNT):
         """Get the n most recent videos, skipping any that don"t match filters."""
 
         page = 0
@@ -112,14 +112,14 @@ class Feed(BaseModel):
 
     def refresh(self, force = False):
         since_last_update = (datetime.datetime.now() - self.updated).total_seconds()
-        if since_last_update < CACHE_TIME:
+        if since_last_update < YRSS_CACHE_TIME:
             if force:
                 logging.info(f"Force updating {self}")
             else:
                 return
         else:
             logging.info(f"Refreshing {self}")
-    
+
         updated_something = False
 
         # Update channel metdata
@@ -145,15 +145,16 @@ class Feed(BaseModel):
 
         return updated_something
 
-    def get_videos(self, n = RSS_COUNT):
+    def get_videos(self, n=YRSS_RSS_COUNT):
         """Get the n most recent videos"""
 
         videos = (
             Video.select()
             .join(Feed)
             .where(Feed.id == self.id)
+            .where(Video.short == False)
             .order_by(Video.published.desc())
-            .paginate(1, RSS_COUNT)
+            .paginate(1, YRSS_RSS_COUNT)
         )
 
         for video in videos:

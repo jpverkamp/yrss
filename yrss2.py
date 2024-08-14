@@ -20,7 +20,7 @@ if "YRSS_API_KEY" not in os.environ:
     exit(1)
 
 # Ask each user to update once per ten minutes
-if "YRSS_DEBUG" in os.environ:
+if os.environ.get("YRSS_DEBUG", "False").lower() == "true":
     logging.info("Running in debug mode, skipping update thread")
 else:
 

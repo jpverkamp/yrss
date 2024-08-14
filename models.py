@@ -15,7 +15,7 @@ from peewee_extra_fields import PasswordField
 import youtube
 
 YRSS_CACHE_TIME = int(os.getenv("YRSS_CACHE_TIME", 60 * 60))  # default = 1 hour
-YRSS_RSS_COUNT = int(os.getenv("YRSS_CACHE_TIME", 100))
+YRSS_RSS_COUNT = int(os.getenv("YRSS_RSS_COUNT", 100))
 VIDEOS_PER_PAGE = 100
 
 db = SqliteDatabase("yrss2.db")

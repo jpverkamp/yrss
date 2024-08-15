@@ -5,7 +5,7 @@ import os
 import requests
 
 YRSS_CACHE_TIME = int(os.getenv("YRSS_CACHE_TIME", 60 * 60))  # default = 1 hour
-YRSS_API_KEY = os.getenv("API_KEY", None)
+YRSS_API_KEY = os.getenv("YRSS_API_KEY", None)
 
 
 def _all(endpoint, **params):

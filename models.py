@@ -149,7 +149,23 @@ class Feed(BaseModel):
 
         # Fetch feed and store/update the most recent videos
         for video_data in youtube.get_videos(self.uploads_id):
-            try:
+            # Does the video already exist?
+            # If so, check if we need to update any of it's information
+            if (
+                Video.select()
+                .where(Video.youtube_id == video_data["youtube_id"])
+                .exists()
+            ):
+                video = Video.get(youtube_id=video_data["youtube_id"])
+                video.update(**video_data)
+                if video.dirty_fields:
+                    logging.info(f"Updated video with new information: {video}")
+                    updated_something = True
+                    video.save()
+
+            # If the video doesn't exist, create it
+            else:
+                # Check separately if it's a short
                 # Newly created videos should also check if they're shorts
                 # https://stackoverflow.com/questions/71192605/how-do-i-get-youtube-shorts-from-youtube-api-data-v3
                 youtube_id = video_data["youtube_id"]
@@ -157,23 +173,13 @@ class Feed(BaseModel):
                     f"https://www.youtube.com/shorts/{youtube_id}",
                     allow_redirects=False,
                 )
-                video.short = not (
+                video_data["short"] = not (
                     response.status_code >= 300 and response.status_code < 400
                 )
-
-                updated_something = True
-                video.save()
 
                 video = Video.create(feed=self, **video_data)
                 updated_something = True
                 logging.info(f"Created new video: {video}")
-            except:
-                video = Video.get(feed=self)
-                video.update(**video_data)
-                if video.dirty_fields:
-                    logging.info(f"Updated video with new information: {video}")
-                    updated_something = True
-                    video.save()
 
         return updated_something
 

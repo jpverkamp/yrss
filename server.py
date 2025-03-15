@@ -125,13 +125,12 @@ def get_subscriptions():
                 peewee.fn.COUNT(Video.id).alias("video_count_30_days"),
             )
             .where(Subscription.user == flask.g.user)
-            .join(Feed, peewee.JOIN.LEFT_OUTER, on=(Subscription.feed == Feed.id))
+            .join(Feed, on=(Subscription.feed == Feed.id))
             .join(
                 Video,
                 peewee.JOIN.LEFT_OUTER,
                 on=(Feed.id == Video.feed),
             )
-            .where(Video.published >= thirty_days_ago)
             .group_by(Subscription, Feed)
         )
 
@@ -153,6 +152,10 @@ def get_subscriptions():
             feed = Feed.create(youtube_id=youtube_id)
 
         feed.refresh()
+
+        if Subscription.get_or_none(user=flask.g.user, feed=feed):
+            flask.flash(f"Already subscribed to {feed.title}")
+            return flask.redirect("/subscriptions")
 
         Subscription.create(user=User.get(email=flask.session.get("email")), feed=feed)
 

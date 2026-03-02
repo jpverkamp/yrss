@@ -27,7 +27,7 @@ YRSS_CACHE_TIME = int(os.getenv("YRSS_CACHE_TIME", 60 * 60))  # default = 1 hour
 YRSS_RSS_COUNT = int(os.getenv("YRSS_RSS_COUNT", 100))
 VIDEOS_PER_PAGE = 100
 
-db = SqliteDatabase("yrss2.db")
+db = SqliteDatabase("yrss2.db", timeout=30, check_same_thread=False)
 
 
 class BaseModel(Model):
@@ -255,4 +255,6 @@ class Filter(BaseModel):
 
 
 db.connect()
+db.execute_sql("PRAGMA journal_mode=WAL")
+db.execute_sql("PRAGMA busy_timeout=30000")  # 30 seconds
 db.create_tables([User, Feed, Video, Subscription, Filter])

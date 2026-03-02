@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 import os
+import sqlite3
 
 logging.basicConfig(
     format="[%(levelname)s] %(funcName)s: %(message)s", level=logging.INFO
@@ -49,6 +50,11 @@ else:
             for feed in models.Feed().select():
                 try:
                     feed.refresh()
+                except sqlite3.OperationalError as ex:
+                    if "locked" in str(ex).lower():
+                        logging.warning(f"Database locked while refreshing {feed}, will retry later")
+                    else:
+                        logging.warning(f"Exception in refresh loop ({ex})")
                 except Exception as ex:
                     logging.warning(f"Exception in refresh loop ({ex})")
 
